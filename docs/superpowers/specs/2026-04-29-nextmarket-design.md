@@ -23,7 +23,7 @@ Zbudować uproszczony marketplace ogłoszeń (NextMarket) jako środowisko testo
 | Walidacja | Zod (typical/hardened) |
 | Sanityzacja | isomorphic-dompurify (hardened) |
 | Stylowanie | Tailwind CSS 4 |
-| Hashowanie | bcrypt (typical/hardened) |
+| Hashowanie | bcryptjs (typical/hardened) — pure-JS bcrypt port, brak natywnych zależności |
 | Rate limit | in-memory token bucket (hardened) |
 | Obrazy | `next/image` z `imageUrl` jako URL tekstowym (BEZ uploadu plików) |
 
@@ -124,7 +124,9 @@ nextmarket/
 
 ## 5. Schemat bazy danych
 
-Drizzle ORM, PostgreSQL. Tabele: `users`, `listings`, `messages`, `sessions`. Enums: `roleEnum` (`user`/`admin`), `listingStatusEnum` (`draft`/`pending`/`active`/`rejected`/`sold`).
+Drizzle ORM, PostgreSQL. Tabele: `users`, `listings`, `messages`. Enums: `roleEnum` (`user`/`admin`), `listingStatusEnum` (`draft`/`pending`/`active`/`rejected`/`sold`).
+
+Tabela `sessions` z oryginalnego promptu jest świadomie pominięta — strategia Auth.js to JWT (`session: { strategy: 'jwt' }`), więc sesje nie wymagają persystencji w bazie. Wariant `baseline` używa homemade cookie z user-id (też bez tabeli).
 
 Zdefiniowany w `src/lib/db/schema.ts` zgodnie ze szczegółami z prompt-u kontekstowego (pgTable z UUID PK, `passwordHash`, `banned`, decimal price, FK z onDelete cascade, relations).
 
@@ -133,7 +135,7 @@ Zdefiniowany w `src/lib/db/schema.ts` zgodnie ze szczegółami z prompt-u kontek
 | Moduł | Cel | Zależności | Konsumenci |
 |---|---|---|---|
 | `lib/db/` | Drizzle client + schema | `pg`, env `DATABASE_URL` | RSC, Server Actions, Route Handlers, seed |
-| `lib/auth.ts` | Auth.js v5 config (Credentials, JWT) | `bcrypt`, `next-auth@5`, `lib/db` | middleware, Server Actions, chronione strony |
+| `lib/auth.ts` | Auth.js v5 config (Credentials, JWT) | `bcryptjs`, `next-auth@5`, `lib/db` | middleware, Server Actions, chronione strony |
 | `lib/actions/*` | Server Actions per agregat | `auth`, `db`, `zod`, `sanitize` | Client Components (formularze) |
 | `lib/utils/sanitize.ts` | Czysta funkcja `sanitizeHtml(input)` | `isomorphic-dompurify` | `RichTextDisplay`, `actions/listings` |
 | `lib/utils/rate-limit.ts` | `checkRateLimit(key, limit, windowMs)` | brak (in-memory Map) | middleware, login action, contact action |
@@ -148,7 +150,7 @@ Każdy moduł testowalny niezależnie. `sanitize` to czysta funkcja. `rate-limit
 |---|---|---|---|---|
 | 1 | `next.config.ts` | minimalny | bez zmian | + global security headers, `poweredBy: false`, restrykcyjne `images.remotePatterns` |
 | 2 | `middleware.ts` | auth gate dla `/admin`, `/profile`, `/listings/new` | **plik usunięty** | + CSP z nonce, HSTS, X-Frame-Options, rate limit, role check |
-| 3 | `lib/auth.ts` | Auth.js JWT + bcrypt | bcrypt → plain text, ręczny cookie bez flag, brak Auth.js | + `Secure` + `SameSite=Strict`, rotacja session ID |
+| 3 | `lib/auth.ts` | Auth.js JWT + bcryptjs | bcryptjs → plain text, ręczny cookie bez flag, brak Auth.js | + `Secure` + `SameSite=Strict`, rotacja session ID |
 | 4 | `lib/actions/listings.ts` | session check + Drizzle, **bez** Zod | bez session check, bez Zod | + Zod + `sanitizeHtml(description)` + ownership check |
 | 5 | `lib/actions/contact.ts` | Server Action | konwersja na Route Handler POST bez CSRF | + Zod + rate limit + honeypot |
 | 6 | `lib/actions/admin.ts` | session + role check | brak role check | + rate limit + audit log |
@@ -159,7 +161,7 @@ Każdy moduł testowalny niezależnie. `sanitize` to czysta funkcja. `rate-limit
 | 11 | `app/api/revalidate/route.ts` | nie istnieje | nie istnieje | + token-protected on-demand ISR |
 | 12 | `components/RichTextDisplay.tsx` | `dangerouslySetInnerHTML` bez sanityzacji | bez zmian | + `DOMPurify.sanitize` z allowlistą |
 | 13 | `app/listings/[id]/page.tsx` | `revalidate = 60` | bez zmian | bez zmian |
-| 14 | `package.json` | next, drizzle, postgres, next-auth@5, bcrypt, zod, tailwind | minus next-auth/zod/bcrypt | plus isomorphic-dompurify |
+| 14 | `package.json` | next, drizzle, postgres, next-auth@5, bcryptjs, zod, tailwind | minus next-auth/zod/bcryptjs/@auth/drizzle-adapter | plus isomorphic-dompurify |
 | 15 | `app/(auth)/login/page.tsx` | Auth.js signin form | własny POST do `/api/login` | bez zmian funkcjonalnych |
 | 16 | `app/admin/layout.tsx` | session+role check w layout | layout istnieje, **brak** check | bez zmian funkcjonalnych |
 
