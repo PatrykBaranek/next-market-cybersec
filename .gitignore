@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+.env*.local
+!.env.example
+*.log
+.DS_Store
+.vscode/
+.idea/
+drizzle/migrations/meta/_journal.json.bak
