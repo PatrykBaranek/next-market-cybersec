@@ -10,3 +10,4 @@ out/
 .vscode/
 .idea/
 drizzle/migrations/meta/_journal.json.bak
+*.tsbuildinfo
