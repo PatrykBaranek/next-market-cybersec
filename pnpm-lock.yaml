@@ -14,6 +14,9 @@ importers:
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
       drizzle-orm:
         specifier: 0.36.4
         version: 0.36.4(@types/react@19.0.2)(postgres@3.4.5)(react@19.0.0)
@@ -1279,6 +1282,10 @@ packages:
   doctrine@2.1.0:
     resolution: {integrity: sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw==}
     engines: {node: '>=0.10.0'}
+
+  dotenv@17.4.2:
+    resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
+    engines: {node: '>=12'}
 
   drizzle-kit@0.30.0:
     resolution: {integrity: sha512-zAf0qg/BX2lV/Xip4igXrtbDv+Ub8S39U6qSOEGNvqcHrnmaQjS4mkkFZOUsgXRbuH56QUeWZxfnLHefrKCV5g==}
@@ -3373,6 +3380,8 @@ snapshots:
   doctrine@2.1.0:
     dependencies:
       esutils: 2.0.3
+
+  dotenv@17.4.2: {}
 
   drizzle-kit@0.30.0:
     dependencies:
