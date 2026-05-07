@@ -1,55 +1,40 @@
-import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { listings } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
-// SECURITY (typical): auth + ownership check on PUT/DELETE; GET is public.
-// baseline diff: removes auth and ownership checks (IDOR + CSRF).
-// hardened diff: + Origin validation, stricter Zod, normalized error messages.
+// SECURITY (baseline): raw SQL with string interpolation on `id` (T5 SQLi),
+// no auth (T3 CSRF on PUT/DELETE), no ownership check (T7 IDOR).
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [row] = await db.select().from(listings).where(eq(listings.id, id)).limit(1);
+  const result = await db.execute(
+    sql.raw(`SELECT * FROM listings WHERE id = '${id}' LIMIT 1`),
+  );
+  const row = (result as unknown as { rows?: unknown[] }).rows?.[0] ?? (result as unknown as unknown[])[0];
   if (!row) return Response.json({ error: 'Not found' }, { status: 404 });
   return Response.json(row);
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await auth();
-  if (!session?.user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const [existing] = await db.select().from(listings).where(eq(listings.id, id)).limit(1);
-  if (!existing) return Response.json({ error: 'Not found' }, { status: 404 });
-  if (existing.authorId !== session.user.id && session.user.role !== 'admin') {
-    return Response.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
   const body = await req.json();
-  const [updated] = await db.update(listings)
-    .set({
-      title: body.title ?? existing.title,
-      description: body.description ?? existing.description,
-      price: body.price ?? existing.price,
-      updatedAt: new Date(),
-    })
-    .where(eq(listings.id, id))
-    .returning();
 
-  return Response.json(updated);
+  // SECURITY (baseline): all values interpolated into SQL string. Try a payload
+  // like {"title":"x', description='owned"} to corrupt sibling columns.
+  const result = await db.execute(
+    sql.raw(`UPDATE listings
+             SET title = '${body.title}',
+                 description = '${body.description}',
+                 price = '${body.price}',
+                 updated_at = now()
+             WHERE id = '${id}'
+             RETURNING *`),
+  );
+  return Response.json(result);
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await auth();
-  if (!session?.user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const [existing] = await db.select().from(listings).where(eq(listings.id, id)).limit(1);
-  if (!existing) return Response.json({ error: 'Not found' }, { status: 404 });
-  if (existing.authorId !== session.user.id && session.user.role !== 'admin') {
-    return Response.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
-  await db.delete(listings).where(eq(listings.id, id));
+  // SECURITY (baseline): no auth, no ownership. Anyone can DELETE any listing.
+  await db.execute(sql.raw(`DELETE FROM listings WHERE id = '${id}'`));
   return new Response(null, { status: 204 });
 }
