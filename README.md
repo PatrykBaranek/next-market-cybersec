@@ -1,5 +1,7 @@
 # NextMarket — Reference App for Next.js Security Thesis
 
+> ⚠️ **You are on the `baseline` branch (Variant A).** This is the deliberately vulnerable variant. DO NOT deploy. See `docs/scenarios/` for active CVE-class issues.
+
 Aplikacja referencyjna do pracy magisterskiej *„Analiza bezpieczeństwa aplikacji webowych opartych na frameworku Next.js"* (Politechnika Krakowska, Cybersecurity).
 
 ## Warianty (gałęzie Git)
