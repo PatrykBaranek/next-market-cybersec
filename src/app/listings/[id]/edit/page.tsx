@@ -14,11 +14,7 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
   const [listing] = await db.select().from(listings).where(eq(listings.id, id)).limit(1);
   if (!listing) notFound();
 
-  // SECURITY (typical): server-side authorization check before rendering edit form.
-  // baseline diff: this block is removed.
-  if (listing.authorId !== session.user.id && session.user.role !== 'admin') {
-    redirect('/listings');
-  }
+  // SECURITY (baseline): NO ownership check before render. T7 vulnerable.
 
   return (
     <div>
