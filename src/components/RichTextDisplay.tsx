@@ -1,7 +1,8 @@
-// SECURITY (typical): renders user-supplied HTML via dangerouslySetInnerHTML WITHOUT sanitization.
-// This is the primary Stored XSS sink (T1, T2). Developer "forgot" to sanitize — typical bug.
-// baseline diff: identical (also vulnerable).
-// hardened diff: replaced with isomorphic-dompurify sanitization with strict allowlist.
+import { sanitizeHtml } from '@/lib/utils/sanitize';
+
+// SECURITY (hardened): all user HTML passes through DOMPurify before rendering.
+// Mitigates T1 (Stored XSS) and T2 (Reflected XSS) on description renders.
 export function RichTextDisplay({ content }: { content: string }) {
-  return <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: content }} />;
+  const clean = sanitizeHtml(content);
+  return <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: clean }} />;
 }
