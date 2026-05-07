@@ -1,0 +1,13 @@
+rules:
+  - id: dangerously-set-inner-html-no-sanitize
+    pattern-either:
+      - pattern: |
+          <$EL dangerouslySetInnerHTML={{ __html: $X }} />
+      - pattern: |
+          <$EL dangerouslySetInnerHTML={{ __html: $X }}>...</$EL>
+    pattern-not-either:
+      - pattern: <$EL dangerouslySetInnerHTML={{ __html: sanitizeHtml(...) }} />
+      - pattern: <$EL dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(...) }} />
+    message: dangerouslySetInnerHTML used without sanitization (Stored/Reflected XSS — T1, T2)
+    languages: [tsx, jsx]
+    severity: ERROR

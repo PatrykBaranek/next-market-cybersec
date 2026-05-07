@@ -1,0 +1,15 @@
+rules:
+  - id: fetch-with-user-controlled-url
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $URL = $REQ.searchParams.get(...)
+              ...
+              fetch($URL, ...)
+          - pattern: |
+              $URL = $REQ.url
+              ...
+              fetch($URL, ...)
+    message: fetch() called with user-controlled URL (SSRF — T6). Use allowlist or hardcoded host.
+    languages: [ts]
+    severity: ERROR

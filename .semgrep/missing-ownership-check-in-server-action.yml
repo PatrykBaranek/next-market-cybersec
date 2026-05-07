@@ -1,0 +1,21 @@
+rules:
+  - id: missing-ownership-check-in-server-action
+    patterns:
+      - pattern: |
+          'use server';
+          ...
+          export async function $FN($ARGS) {
+            ...
+            await db.update($T).set(...).where($COND);
+            ...
+          }
+      - pattern-not: |
+          export async function $FN($ARGS) {
+            ...
+            if (... === session.user.id ...) { ... }
+            ...
+            await db.update($T).set(...).where($COND);
+          }
+    message: Server Action mutation without explicit ownership check (T7 — IDOR).
+    languages: [ts]
+    severity: WARNING

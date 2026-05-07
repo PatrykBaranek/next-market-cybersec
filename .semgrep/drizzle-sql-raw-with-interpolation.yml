@@ -1,0 +1,7 @@
+rules:
+  - id: drizzle-sql-raw-with-interpolation
+    patterns:
+      - pattern: sql.raw(`...${$X}...`)
+    message: sql.raw with template interpolation enables SQL injection (T5). Use parameterized Drizzle query builder.
+    languages: [ts]
+    severity: ERROR
