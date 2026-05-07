@@ -1,13 +1,26 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // SECURITY (typical): no global headers, default poweredBy header present.
-  // baseline diff: same.
-  // hardened diff: + headers(), poweredBy: false, restrictive images.remotePatterns.
+  poweredBy: false,
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: '**' }, // SECURITY (typical): permissive.
+      // SECURITY (hardened): explicit allowlist for image hosts.
+      { protocol: 'https', hostname: 'picsum.photos' },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+        ],
+      },
+    ];
   },
 };
 
