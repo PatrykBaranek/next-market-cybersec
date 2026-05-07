@@ -1,17 +1,9 @@
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ReactNode } from 'react';
 
-// SECURITY (typical): defense-in-depth — even though middleware checks /admin auth,
-// the layout enforces role check at render time.
-// baseline diff: this role check is removed. With middleware also missing, /admin is fully exposed.
-// hardened diff: identical to typical (middleware adds role-check redundancy too).
-export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const session = await auth();
-  if (!session?.user) redirect('/login');
-  if (session.user.role !== 'admin') redirect('/');
-
+// SECURITY (baseline): no auth, no role check.
+// Combined with deleted middleware, /admin/* is fully accessible to anyone.
+export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="grid grid-cols-[200px_1fr] gap-8">
       <aside className="border-r border-gray-200 pr-6 text-sm">
