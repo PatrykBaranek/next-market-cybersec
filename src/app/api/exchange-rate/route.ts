@@ -1,22 +1,35 @@
-// SECURITY (typical): hardcoded base URL prevents arbitrary host SSRF.
-// User controls only the `currency` query param, which is interpolated into the URL string.
-// Without explicit validation, exotic values could break the URL or hit unexpected paths.
-// baseline diff: user controls full `?api_url=` (full SSRF).
-// hardened diff: + currency allowlist, timeout, no credentials, User-Agent header.
+// SECURITY (hardened): allowlist of currencies, hardcoded base, timeout, no credentials.
+// T6 mitigation.
 
-const BASE_URL = 'https://api.exchangerate.host/latest';
+const ALLOWED_API = 'https://api.exchangerate.host/latest';
+const ALLOWED_CURRENCIES = new Set(['USD', 'EUR', 'GBP', 'CHF', 'CZK', 'PLN']);
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const currency = searchParams.get('currency') ?? 'EUR';
+  const currency = (searchParams.get('currency') ?? 'EUR').toUpperCase();
 
-  const url = `${BASE_URL}?base=PLN&symbols=${currency}`;
-  const res = await fetch(url);
-
-  if (!res.ok) {
-    return Response.json({ error: 'Upstream error' }, { status: 502 });
+  if (!ALLOWED_CURRENCIES.has(currency)) {
+    return Response.json({ error: 'Unsupported currency' }, { status: 400 });
   }
 
-  const data = await res.json();
-  return Response.json({ rate: data.rates?.[currency] ?? null, raw: data });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const res = await fetch(`${ALLOWED_API}?base=PLN&symbols=${currency}`, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'NextMarket/1.0' },
+      // SECURITY (hardened): never forward credentials.
+      cache: 'no-store',
+    });
+    if (!res.ok) {
+      return Response.json({ error: 'Exchange rate unavailable' }, { status: 502 });
+    }
+    const data = await res.json();
+    return Response.json({ rate: data.rates?.[currency] ?? null });
+  } catch {
+    return Response.json({ error: 'Exchange rate unavailable' }, { status: 502 });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
