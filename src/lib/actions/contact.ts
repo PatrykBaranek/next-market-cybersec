@@ -2,31 +2,49 @@
 
 import { db } from '@/lib/db';
 import { messages } from '@/lib/db/schema';
+import { z } from 'zod';
+import { headers } from 'next/headers';
+import { checkRateLimit, rateLimitKey } from '@/lib/utils/rate-limit';
 
-// SECURITY (typical): Server Action — Next.js built-in CSRF protection (T4 mitigated by framework).
-// No Zod (just type coercion), no rate limiting, no honeypot.
-// baseline diff: this file deleted; logic moved to /api/contact/route.ts as plain Route Handler (T3 vulnerable).
-// hardened diff: + Zod, + rate limit per IP, + honeypot field check.
+// SECURITY (hardened): Zod, rate limit per IP, honeypot field.
+
+const contactSchema = z.object({
+  senderName: z.string().min(2).max(100).trim(),
+  senderEmail: z.string().email().max(255),
+  content: z.string().min(5).max(5_000).trim(),
+  // honeypot — must be empty.
+  website: z.string().max(0).optional().default(''),
+});
 
 export async function sendContactMessage(input: {
   listingId: string;
   recipientId: string;
   formData: FormData;
 }): Promise<{ ok: boolean; error?: string }> {
-  const senderName = String(input.formData.get('senderName') ?? '').trim();
-  const senderEmail = String(input.formData.get('senderEmail') ?? '').trim();
-  const content = String(input.formData.get('content') ?? '').trim();
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
 
-  if (!senderName || !senderEmail || !content) {
-    return { ok: false, error: 'Wypełnij wszystkie pola' };
+  const rl = checkRateLimit(rateLimitKey(ip, 'contact'), 3, 60_000);
+  if (!rl.ok) {
+    return { ok: false, error: 'Zbyt wiele wiadomości. Spróbuj ponownie za chwilę.' };
+  }
+
+  const parsed = contactSchema.safeParse({
+    senderName: input.formData.get('senderName'),
+    senderEmail: input.formData.get('senderEmail'),
+    content: input.formData.get('content'),
+    website: input.formData.get('website') ?? '',
+  });
+
+  if (!parsed.success) {
+    return { ok: false, error: 'Nieprawidłowe dane' };
   }
 
   await db.insert(messages).values({
     listingId: input.listingId,
     recipientId: input.recipientId,
-    senderEmail,
-    senderName,
-    content,
+    senderEmail: parsed.data.senderEmail,
+    senderName: parsed.data.senderName,
+    content: parsed.data.content,
   });
 
   return { ok: true };

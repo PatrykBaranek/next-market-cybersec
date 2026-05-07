@@ -29,6 +29,8 @@ export function ContactForm({ listingId, recipientId }: { listingId: string; rec
       <input name="senderName" type="text" placeholder="Imię" required className={inputClass} />
       <input name="senderEmail" type="email" placeholder="Email" required className={inputClass} />
       <textarea name="content" placeholder="Wiadomość" required rows={4} className={inputClass} />
+      {/* SECURITY (hardened): honeypot field — bots fill it, real users don't see it. */}
+      <input name="website" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute opacity-0 pointer-events-none -left-[9999px]" />
       {status.kind === 'error' && (
         <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{status.msg}</p>
       )}
