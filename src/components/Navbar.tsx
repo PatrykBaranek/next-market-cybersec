@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { auth, signOut } from '@/lib/auth';
+import { auth } from '@/lib/auth';
+import { LogoutButton } from '@/components/LogoutButton';
 
 export async function Navbar() {
   const session = await auth();
@@ -20,9 +21,7 @@ export async function Navbar() {
                 <Link href="/admin" className="text-gray-700 hover:text-gray-900 transition">Admin</Link>
               )}
               <span className="text-gray-500 hidden sm:inline">{session.user.email}</span>
-              <form action={async () => { 'use server'; await signOut({ redirectTo: '/' }); }}>
-                <button type="submit" className="text-gray-700 hover:text-gray-900 transition">Wyloguj</button>
-              </form>
+              <LogoutButton />
             </>
           ) : (
             <>

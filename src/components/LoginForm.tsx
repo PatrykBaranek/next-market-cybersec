@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
 
+// SECURITY (baseline): plain fetch POST to /api/login (no CSRF token).
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,16 +17,17 @@ export function LoginForm() {
     setLoading(true);
     setError(null);
 
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     });
 
     setLoading(false);
 
-    if (result?.error) {
-      setError('Nieprawidłowy email lub hasło');
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? 'Nieprawidłowy email lub hasło');
       return;
     }
 
