@@ -1,5 +1,7 @@
 # NextMarket — Reference App for Next.js Security Thesis
 
+> ✅ **You are on the `hardened` branch (Variant C).** Full OWASP ASVS L2 hardening applied. Used as the reference target for "what good looks like".
+
 Aplikacja referencyjna do pracy magisterskiej *„Analiza bezpieczeństwa aplikacji webowych opartych na frameworku Next.js"* (Politechnika Krakowska, Cybersecurity).
 
 ## Warianty (gałęzie Git)
