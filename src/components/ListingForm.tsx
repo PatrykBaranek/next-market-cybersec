@@ -18,7 +18,15 @@ export function ListingForm(props: Props) {
       ? await createListing(formData)
       : await updateListing(props.listingId, formData);
     setLoading(false);
-    if (result?.error) setError(result.error);
+    if (result?.error) {
+      const err = result.error;
+      if (typeof err === 'string') {
+        setError(err);
+      } else {
+        const messages = Object.values(err).flat().filter(Boolean) as string[];
+        setError(messages.join(', ') || 'Nieprawidłowe dane');
+      }
+    }
   }
 
   const inputClass =

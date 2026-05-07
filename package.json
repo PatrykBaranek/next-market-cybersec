@@ -1,6 +1,6 @@
 {
   "name": "nextmarket",
-  "version": "1.0.0-typical",
+  "version": "1.0.0-hardened",
   "private": true,
   "type": "module",
   "scripts": {
