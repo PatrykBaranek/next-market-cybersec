@@ -1,22 +1,16 @@
-// SECURITY (typical): hardcoded base URL prevents arbitrary host SSRF.
-// User controls only the `currency` query param, which is interpolated into the URL string.
-// Without explicit validation, exotic values could break the URL or hit unexpected paths.
-// baseline diff: user controls full `?api_url=` (full SSRF).
-// hardened diff: + currency allowlist, timeout, no credentials, User-Agent header.
-
-const BASE_URL = 'https://api.exchangerate.host/latest';
+// SECURITY (baseline): user controls full target URL via ?api_url= (T6 — full SSRF).
+// Try: /api/exchange-rate?api_url=http://localhost:5432
+// Try: /api/exchange-rate?api_url=http://169.254.169.254/latest/meta-data/  (cloud metadata)
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const currency = searchParams.get('currency') ?? 'EUR';
+  const apiUrl = searchParams.get('api_url') ?? 'https://api.exchangerate.host/latest';
 
-  const url = `${BASE_URL}?base=PLN&symbols=${currency}`;
-  const res = await fetch(url);
+  const res = await fetch(apiUrl);
+  const data = await res.text();
 
-  if (!res.ok) {
-    return Response.json({ error: 'Upstream error' }, { status: 502 });
-  }
-
-  const data = await res.json();
-  return Response.json({ rate: data.rates?.[currency] ?? null, raw: data });
+  return new Response(data, {
+    status: res.status,
+    headers: { 'Content-Type': res.headers.get('content-type') ?? 'application/json' },
+  });
 }
