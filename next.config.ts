@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'picsum.photos' },
     ],
   },
+  output: 'standalone',
   async headers() {
     return [
       {
