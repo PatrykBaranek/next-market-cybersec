@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '**' }, // SECURITY (typical): permissive.
     ],
   },
+  output: 'standalone',
 };
 
 export default nextConfig;
